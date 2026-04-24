@@ -88,6 +88,10 @@ export default async function RegisterPage({ searchParams }: Props) {
                 <option value="faculty">Faculty</option>
                 <option value="admin">Admin</option>
               </select>
+              <p className="mt-2 text-xs text-[var(--ink-soft)]">
+                Select Admin to create a system administrator account. Admin
+                signup requires SUPABASE_SERVICE_ROLE_KEY.
+              </p>
             </div>
 
             <Button type="submit" className="mt-2 w-full">

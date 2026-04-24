@@ -51,21 +51,34 @@ export default async function CoursesPage({ searchParams }: Props) {
     {},
   );
 
+  const showStudentView = profile.role === "student";
+  const title = showStudentView ? "Enrolled" : "List of Class";
+  const description = showStudentView
+    ? "Your enrolled classes and sections."
+    : "Classes you teach and manage.";
+  const emptyTitle = showStudentView
+    ? "No enrolled classes yet."
+    : "No classes yet.";
+  const emptyDescription = showStudentView
+    ? "Try joining with a class code or ask faculty for one."
+    : "Create a class to start teaching and invite students.";
+  const emptyLinkText = showStudentView ? "Join class" : "Create class";
+  const emptyLinkHref = showStudentView ? "/join" : "/courses/create";
+  const createButtonLabel = showStudentView ? "Create Course" : "Create Class";
+
   return (
     <div className="space-y-4">
       <div className="flex items-end justify-between">
         <div>
           <h2 className="text-3xl font-semibold tracking-tight text-[var(--ink)]">
-            Courses
+            {title}
           </h2>
-          <p className="mt-1 text-sm text-[var(--ink-soft)]">
-            Your current classes and sections.
-          </p>
+          <p className="mt-1 text-sm text-[var(--ink-soft)]">{description}</p>
         </div>
 
         {profile.role !== "student" ? (
           <Link href="/courses/create">
-            <Button>Create Course</Button>
+            <Button>{createButtonLabel}</Button>
           </Link>
         ) : null}
       </div>
@@ -92,17 +105,15 @@ export default async function CoursesPage({ searchParams }: Props) {
         </div>
       ) : (
         <div className="rounded-xl border border-[var(--line)] bg-white px-5 py-6 shadow-sm">
-          <p className="text-lg font-medium text-[var(--ink)]">
-            No courses yet.
-          </p>
+          <p className="text-lg font-medium text-[var(--ink)]">{emptyTitle}</p>
           <p className="mt-1 text-sm text-[var(--ink-soft)]">
-            Try joining with a class code or ask faculty for one.
+            {emptyDescription}
           </p>
           <Link
-            href="/join"
+            href={emptyLinkHref}
             className="mt-3 inline-block text-sm font-medium text-[var(--pup-maroon)] hover:underline"
           >
-            Join a course
+            {emptyLinkText}
           </Link>
         </div>
       )}

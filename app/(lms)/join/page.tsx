@@ -13,7 +13,7 @@ export default async function JoinPage({ searchParams }: Props) {
     <div className="mx-auto max-w-xl space-y-4">
       <div>
         <h2 className="text-3xl font-semibold tracking-tight text-[var(--ink)]">
-          Join a course
+          Join class
         </h2>
         <p className="mt-1 text-sm text-[var(--ink-soft)]">
           Paste the class code provided by your faculty.

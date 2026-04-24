@@ -46,6 +46,14 @@ export async function registerAction(formData: FormData) {
     process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+  if (role === "admin" && !serviceRoleKey) {
+    redirect(
+      `/auth/register?error=${encodeURIComponent(
+        "Admin registration requires SUPABASE_SERVICE_ROLE_KEY. Add it to .env.local or use the setup admin page.",
+      )}`,
+    );
+  }
+
   if (serviceRoleKey) {
     const adminSupabase = createAdminClient(supabaseUrl!, serviceRoleKey);
 

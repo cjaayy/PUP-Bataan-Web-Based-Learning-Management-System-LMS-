@@ -104,6 +104,14 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key`}
             >
               Go to login
             </Link>
+            {state.hasServiceRoleKey ? (
+              <Link
+                href="/setup/admin"
+                className="rounded-lg border border-[var(--line)] bg-white px-5 py-2.5 text-sm font-medium text-[var(--ink)] transition-all duration-200 hover:bg-[var(--surface-2)]"
+              >
+                Create admin account
+              </Link>
+            ) : null}
           </div>
         </section>
       </div>

@@ -10,15 +10,30 @@ type SidebarProps = {
   role: UserRole;
 };
 
-const items = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/courses", label: "Courses" },
-  { href: "/join", label: "Join Course" },
-  { href: "/calendar", label: "Calendar" },
-];
-
 export function Sidebar({ role }: SidebarProps) {
   const currentPath = usePathname();
+
+  const itemSets = {
+    student: [
+      { href: "/dashboard", label: "Dashboard" },
+      { href: "/courses", label: "Enrolled" },
+      { href: "/join", label: "Join Class" },
+      { href: "/calendar", label: "Calendar" },
+    ],
+    faculty: [
+      { href: "/dashboard", label: "Dashboard" },
+      { href: "/courses", label: "List of Class" },
+      { href: "/courses/create", label: "Create Class" },
+      { href: "/calendar", label: "Calendar" },
+    ],
+  } as const;
+
+  const items =
+    role === "student"
+      ? itemSets.student
+      : role === "faculty"
+        ? itemSets.faculty
+        : [{ href: "/dashboard", label: "Dashboard" }];
 
   return (
     <aside className="w-[240px] shrink-0 border-r border-[var(--line)] bg-[linear-gradient(180deg,#fffaf1_0%,#f8eddc_100%)] px-4 py-6">
@@ -66,6 +81,20 @@ export function Sidebar({ role }: SidebarProps) {
             </Link>
           );
         })}
+
+        {role === "admin" ? (
+          <Link
+            href="/admin"
+            className={cn(
+              "block rounded-lg px-3 py-2 text-sm transition-all duration-200",
+              currentPath === "/admin" || currentPath.startsWith("/admin/")
+                ? "bg-white text-[var(--pup-maroon)] shadow-sm"
+                : "text-[var(--ink-soft)] hover:bg-white hover:text-[var(--ink)]",
+            )}
+          >
+            Admin Panel
+          </Link>
+        ) : null}
       </nav>
     </aside>
   );

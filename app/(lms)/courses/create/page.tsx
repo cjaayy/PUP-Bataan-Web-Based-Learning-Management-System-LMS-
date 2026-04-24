@@ -16,7 +16,7 @@ export default async function CreateCoursePage({ searchParams }: Props) {
     <div className="mx-auto max-w-2xl space-y-4">
       <div>
         <h2 className="text-3xl font-semibold tracking-tight text-[var(--ink)]">
-          Create Course
+          Create Class
         </h2>
         <p className="mt-1 text-sm text-[var(--ink-soft)]">
           Set class info and generate a shareable course code.
@@ -83,7 +83,7 @@ export default async function CreateCoursePage({ searchParams }: Props) {
           />
         </div>
 
-        <Button type="submit">Create course</Button>
+        <Button type="submit">Create class</Button>
       </form>
     </div>
   );
