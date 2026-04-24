@@ -140,7 +140,7 @@ export default async function AdminPage({ searchParams }: Props) {
 
   return (
     <div className="space-y-5">
-      <section className="rounded-xl border border-[var(--line)] bg-white px-5 py-5 shadow-sm">
+      <section className="rounded-xl border border-[var(--line)] bg-[var(--surface)] px-5 py-5 shadow-sm">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-sm text-[var(--ink-soft)]">Admin panel</p>
@@ -204,7 +204,7 @@ export default async function AdminPage({ searchParams }: Props) {
             <select
               name="role"
               defaultValue={roleFilter ?? "all"}
-              className="rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--pup-maroon)]"
+              className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--pup-maroon)]"
             >
               <option value="all">All roles</option>
               <option value="student">Student</option>
@@ -221,7 +221,7 @@ export default async function AdminPage({ searchParams }: Props) {
           </form>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" suppressHydrationWarning>
           <table className="w-full border-collapse text-left text-sm">
             <thead>
               <tr>
@@ -263,8 +263,8 @@ export default async function AdminPage({ searchParams }: Props) {
                         <span
                           className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
                             disabled
-                              ? "bg-[#FDE8EE] text-[#B42318]"
-                              : "bg-[#EDF2F7] text-[#2D3748]"
+                              ? "bg-[var(--surface-2)] text-[var(--pup-maroon)]"
+                              : "bg-[var(--surface-2)] text-[var(--ink)]"
                           }`}
                         >
                           {disabled ? "Deactivated" : "Active"}
@@ -294,7 +294,7 @@ export default async function AdminPage({ searchParams }: Props) {
                           <Button
                             type="submit"
                             variant="ghost"
-                            className="text-[#b42318] hover:bg-[#fee2e2]"
+                            className="text-[var(--pup-maroon)] hover:bg-[var(--surface-2)]"
                           >
                             Delete
                           </Button>

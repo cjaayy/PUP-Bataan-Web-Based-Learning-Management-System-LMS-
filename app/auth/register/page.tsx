@@ -11,7 +11,7 @@ export default async function RegisterPage({ searchParams }: Props) {
   const params = await searchParams;
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(180deg,#f4f1f2_0%,#f9f8f8_35%,#f2eff0_100%)] px-4 py-10">
+    <main className="min-h-screen bg-transparent px-4 py-10">
       <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-5xl items-center justify-center">
         <AuthCard
           title="Create account"
@@ -80,7 +80,7 @@ export default async function RegisterPage({ searchParams }: Props) {
               <select
                 id="role"
                 name="role"
-                className="w-full rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--pup-maroon)]"
+                className="w-full rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--pup-maroon)]"
                 defaultValue="student"
                 required
               >

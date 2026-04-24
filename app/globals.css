@@ -39,7 +39,7 @@ body {
       rgb(255 248 236 / 0.78) 38%,
       rgb(255 242 227 / 0.9) 100%
     ),
-    url("/photos/PUP%20Bataan.webp") center/cover fixed no-repeat,
+    url("/photos/PUP Bataan.webp") center/cover fixed no-repeat,
     radial-gradient(
       circle at top right,
       rgb(255 211 0 / 0.14),
@@ -52,7 +52,7 @@ body {
     ),
     var(--background);
   color: var(--foreground);
-  font-family: var(--font-main), sans-serif;
+  font-family: "Trajan Pro", var(--font-main), serif;
 }
 
 html[data-theme="dark"] body {
@@ -63,7 +63,7 @@ html[data-theme="dark"] body {
       rgb(48 32 27 / 0.78) 38%,
       rgb(42 25 21 / 0.9) 100%
     ),
-    url("/photos/PUP%20Bataan.webp") center/cover fixed no-repeat,
+    url("/photos/PUP Bataan.webp") center/cover fixed no-repeat,
     radial-gradient(
       circle at top right,
       rgb(200 29 15 / 0.14),

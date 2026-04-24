@@ -29,13 +29,17 @@ function applyTheme(theme: Theme) {
 }
 
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>("light");
+  const [theme, setTheme] = useState<Theme | null>(null);
 
   useEffect(() => {
     setTheme(getStoredTheme());
   }, []);
 
   useEffect(() => {
+    if (!theme) {
+      return;
+    }
+
     applyTheme(theme);
   }, [theme]);
 
@@ -47,6 +51,7 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={toggleTheme}
+      disabled={!theme}
       className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--ink-soft)] transition-all duration-200 hover:bg-[var(--surface-2)]"
       aria-label="Toggle theme"
     >
