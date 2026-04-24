@@ -17,7 +17,7 @@ export function Button({
         variant === "primary" &&
           "bg-[var(--pup-maroon)] text-white shadow-sm hover:translate-y-[-1px] hover:bg-[var(--pup-maroon-deep)]",
         variant === "secondary" &&
-          "border border-[var(--line)] bg-white text-[var(--ink)] hover:bg-[var(--surface-2)]",
+          "border border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] hover:bg-[var(--surface-2)]",
         variant === "ghost" &&
           "text-[var(--ink-soft)] hover:bg-[var(--surface-2)]",
         className,

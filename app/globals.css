@@ -55,6 +55,28 @@ body {
   font-family: var(--font-main), sans-serif;
 }
 
+html[data-theme="dark"] body {
+  background:
+    linear-gradient(
+      180deg,
+      rgb(33 17 16 / 0.88) 0%,
+      rgb(48 32 27 / 0.78) 38%,
+      rgb(42 25 21 / 0.9) 100%
+    ),
+    url("/photos/PUP%20Bataan.webp") center/cover fixed no-repeat,
+    radial-gradient(
+      circle at top right,
+      rgb(200 29 15 / 0.14),
+      transparent 28%
+    ),
+    radial-gradient(
+      circle at bottom left,
+      rgb(143 18 7 / 0.08),
+      transparent 34%
+    ),
+    var(--background);
+}
+
 html {
   color-scheme: light;
 }

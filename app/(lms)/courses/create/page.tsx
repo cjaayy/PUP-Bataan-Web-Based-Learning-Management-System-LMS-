@@ -24,14 +24,14 @@ export default async function CreateCoursePage({ searchParams }: Props) {
       </div>
 
       {params.error ? (
-        <div className="rounded-lg border border-[#d7b9c2] bg-[#fff5f8] px-3 py-2 text-sm text-[#7f233f]">
+        <div className="rounded-lg border border-[var(--line)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--pup-maroon)]">
           {params.error}
         </div>
       ) : null}
 
       <form
         action={createCourseAction}
-        className="space-y-3 rounded-xl border border-[var(--line)] bg-white p-5 shadow-sm"
+        className="space-y-3 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm"
       >
         <div>
           <label

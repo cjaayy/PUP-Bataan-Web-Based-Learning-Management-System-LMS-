@@ -36,7 +36,7 @@ export function Sidebar({ role }: SidebarProps) {
         : [{ href: "/dashboard", label: "Dashboard" }];
 
   return (
-    <aside className="w-[240px] shrink-0 border-r border-[var(--line)] bg-[linear-gradient(180deg,#fffaf1_0%,#f8eddc_100%)] px-4 py-6">
+    <aside className="w-[240px] shrink-0 border-r border-[var(--line)] bg-[var(--surface)] px-4 py-6">
       <div className="mb-8 px-2">
         <div className="flex items-center gap-3">
           <Image
@@ -44,7 +44,7 @@ export function Sidebar({ role }: SidebarProps) {
             alt="PUP Bataan logo"
             width={42}
             height={42}
-            className="h-10 w-10 rounded-full border border-[var(--line)] bg-white object-cover p-1 shadow-sm"
+            className="h-10 w-10 rounded-full border border-[var(--line)] bg-[var(--surface)] object-cover p-1 shadow-sm"
             priority
           />
           <div>
@@ -61,9 +61,17 @@ export function Sidebar({ role }: SidebarProps) {
 
       <nav className="space-y-1">
         {items.map((item, i) => {
-          const active =
+          let active =
             currentPath === item.href ||
             currentPath.startsWith(`${item.href}/`);
+
+          // Exclude /courses/create from /courses highlight
+          if (
+            item.href === "/courses" &&
+            currentPath.startsWith("/courses/create")
+          ) {
+            active = false;
+          }
 
           return (
             <Link
@@ -73,8 +81,8 @@ export function Sidebar({ role }: SidebarProps) {
                 "block rounded-lg px-3 py-2 text-sm transition-all duration-200",
                 i % 2 === 0 ? "ml-[3px]" : "ml-0",
                 active
-                  ? "bg-white text-[var(--pup-maroon)] shadow-sm"
-                  : "text-[var(--ink-soft)] hover:bg-white hover:text-[var(--ink)]",
+                  ? "bg-[var(--surface-2)] text-[var(--pup-maroon)] shadow-sm"
+                  : "text-[var(--ink-soft)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)]",
               )}
             >
               {item.label}
@@ -88,8 +96,8 @@ export function Sidebar({ role }: SidebarProps) {
             className={cn(
               "block rounded-lg px-3 py-2 text-sm transition-all duration-200",
               currentPath === "/admin" || currentPath.startsWith("/admin/")
-                ? "bg-white text-[var(--pup-maroon)] shadow-sm"
-                : "text-[var(--ink-soft)] hover:bg-white hover:text-[var(--ink)]",
+                ? "bg-[var(--surface-2)] text-[var(--pup-maroon)] shadow-sm"
+                : "text-[var(--ink-soft)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)]",
             )}
           >
             Admin Panel

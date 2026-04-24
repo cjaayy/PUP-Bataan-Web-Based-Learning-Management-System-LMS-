@@ -84,7 +84,7 @@ export default async function CoursesPage({ searchParams }: Props) {
       </div>
 
       {params.error ? (
-        <div className="rounded-lg border border-[#d7b9c2] bg-[#fff5f8] px-3 py-2 text-sm text-[#7f233f]">
+        <div className="rounded-lg border border-[var(--line)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--pup-maroon)]">
           {params.error}
         </div>
       ) : null}
@@ -104,7 +104,7 @@ export default async function CoursesPage({ searchParams }: Props) {
           ))}
         </div>
       ) : (
-        <div className="rounded-xl border border-[var(--line)] bg-white px-5 py-6 shadow-sm">
+        <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] px-5 py-6 shadow-sm">
           <p className="text-lg font-medium text-[var(--ink)]">{emptyTitle}</p>
           <p className="mt-1 text-sm text-[var(--ink-soft)]">
             {emptyDescription}

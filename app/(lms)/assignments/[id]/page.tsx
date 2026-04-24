@@ -120,13 +120,13 @@ export default async function AssignmentDetailPage({
       </Card>
 
       {query.error ? (
-        <div className="rounded-lg border border-[#d7b9c2] bg-[#fff5f8] px-3 py-2 text-sm text-[#7f233f]">
+        <div className="rounded-lg border border-[var(--line)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--pup-maroon)]">
           {query.error}
         </div>
       ) : null}
 
       {query.saved ? (
-        <div className="rounded-lg border border-[#c7ddcc] bg-[#f3fbf5] px-3 py-2 text-sm text-[#305d3c]">
+        <div className="rounded-lg border border-[var(--line)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[#10b981]">
           Submission saved.
         </div>
       ) : null}

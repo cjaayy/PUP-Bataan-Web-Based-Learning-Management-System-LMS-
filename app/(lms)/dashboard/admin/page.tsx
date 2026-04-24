@@ -20,7 +20,7 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="space-y-5">
-      <section className="rounded-xl border border-[var(--line)] bg-white px-5 py-5 shadow-sm">
+      <section className="rounded-xl border border-[var(--line)] bg-[var(--surface)] px-5 py-5 shadow-sm">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-sm text-[var(--ink-soft)]">Admin dashboard</p>
@@ -73,7 +73,7 @@ export default async function AdminDashboardPage() {
           </div>
           <Link
             href="/admin"
-            className="rounded-lg border border-[var(--line)] bg-white px-4 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--surface-2)]"
+            className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--surface-2)]"
           >
             Open admin panel
           </Link>

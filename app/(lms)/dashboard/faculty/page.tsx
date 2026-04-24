@@ -24,7 +24,7 @@ export default async function FacultyDashboardPage() {
 
   return (
     <div className="space-y-5">
-      <section className="rounded-xl border border-[var(--line)] bg-white px-5 py-5 shadow-sm">
+      <section className="rounded-xl border border-[var(--line)] bg-[var(--surface)] px-5 py-5 shadow-sm">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-sm text-[var(--ink-soft)]">Faculty dashboard</p>
@@ -50,7 +50,10 @@ export default async function FacultyDashboardPage() {
         <div className="mt-3 space-y-3">
           {typedAnnouncements.length > 0 ? (
             typedAnnouncements.map((item) => (
-              <div key={item.id} className="rounded-lg bg-white px-3 py-2">
+              <div
+                key={item.id}
+                className="rounded-lg bg-[var(--surface-2)] px-3 py-2"
+              >
                 <p className="text-sm font-medium text-[var(--ink)]">
                   {item.title}
                 </p>

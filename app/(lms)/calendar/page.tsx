@@ -94,8 +94,8 @@ export default async function CalendarPage() {
                 key={day}
                 className={`min-h-[96px] rounded-lg border px-2 py-2 ${
                   isToday
-                    ? "border-[var(--pup-maroon)] bg-[#fdf7f9]"
-                    : "border-[var(--line)] bg-white"
+                    ? "border-[var(--pup-maroon)] bg-[var(--surface-2)]"
+                    : "border-[var(--line)] bg-[var(--surface)]"
                 }`}
               >
                 <p className="text-sm font-medium text-[var(--ink)]">{day}</p>
@@ -136,7 +136,7 @@ export default async function CalendarPage() {
               .map((assignment) => (
                 <div
                   key={assignment.id}
-                  className="rounded-lg bg-white px-3 py-2 shadow-sm"
+                  className="rounded-lg bg-[var(--surface-2)] px-3 py-2 shadow-sm"
                 >
                   <p className="text-sm font-medium text-[var(--ink)]">
                     {assignment.title}

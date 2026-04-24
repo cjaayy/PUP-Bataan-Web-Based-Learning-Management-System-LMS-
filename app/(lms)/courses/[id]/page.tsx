@@ -186,7 +186,7 @@ export default async function CourseDetailPage({
       </div>
 
       {query.error ? (
-        <div className="rounded-lg border border-[#d7b9c2] bg-[#fff5f8] px-3 py-2 text-sm text-[#7f233f]">
+        <div className="rounded-lg border border-[var(--line)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--pup-maroon)]">
           {query.error}
         </div>
       ) : null}

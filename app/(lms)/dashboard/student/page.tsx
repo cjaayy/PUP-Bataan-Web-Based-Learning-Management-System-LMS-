@@ -57,7 +57,7 @@ export default async function StudentDashboardPage() {
 
   return (
     <div className="space-y-5">
-      <section className="rounded-xl border border-[var(--line)] bg-white px-5 py-5 shadow-sm">
+      <section className="rounded-xl border border-[var(--line)] bg-[var(--surface)] px-5 py-5 shadow-sm">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-sm text-[var(--ink-soft)]">Student dashboard</p>
@@ -83,7 +83,10 @@ export default async function StudentDashboardPage() {
         <div className="mt-3 space-y-3">
           {typedDeadlines.length > 0 ? (
             typedDeadlines.map((deadline) => (
-              <div key={deadline.id} className="rounded-lg bg-white px-3 py-2">
+              <div
+                key={deadline.id}
+                className="rounded-lg bg-[var(--surface-2)] px-3 py-2"
+              >
                 <p className="text-sm text-[var(--ink)]">{deadline.title}</p>
                 <p className="text-xs text-[var(--ink-soft)]">
                   {deadline.courses?.[0]?.title || "Course"} •{" "}
@@ -110,7 +113,7 @@ export default async function StudentDashboardPage() {
             typedAnnouncements.map((item) => (
               <div
                 key={item.id}
-                className="rounded-lg border border-[var(--line)] px-3 py-2"
+                className="rounded-lg border border-[var(--line)] bg-[var(--surface-2)] px-3 py-2"
               >
                 <p className="text-sm font-medium text-[var(--ink)]">
                   {item.title}

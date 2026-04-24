@@ -16,7 +16,7 @@ export function Modal({ open, title, children }: ModalProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 p-4">
       <div
         className={cn(
-          "w-full max-w-lg rounded-xl border border-[var(--line)] bg-white p-5 shadow-sm",
+          "w-full max-w-lg rounded-xl border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm",
           "animate-[fadeIn_.22s_ease-out]",
         )}
       >
