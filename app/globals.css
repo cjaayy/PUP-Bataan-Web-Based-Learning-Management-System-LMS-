@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+:root {
+  --background: #fbf4e7;
+  --foreground: #3a1512;
+  --surface: #fffaf1;
+  --surface-2: #f8eddc;
+  --ink: #4c1c17;
+  --ink-soft: #856253;
+  --line: #ead9bf;
+  --pup-maroon: #8a0000;
+  --pup-maroon-deep: #670000;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-main);
+  --font-mono: var(--font-code);
+}
+
+[data-theme="dark"] {
+  --background: #170806;
+  --foreground: #f8efe6;
+  --surface: #211110;
+  --surface-2: #30201b;
+  --ink: #fdf6ef;
+  --ink-soft: #e0c9b1;
+  --line: #5a342c;
+  --pup-maroon: #c81d0f;
+  --pup-maroon-deep: #8f1207;
+}
+
+body {
+  background:
+    linear-gradient(
+      180deg,
+      rgb(255 250 241 / 0.88) 0%,
+      rgb(255 248 236 / 0.78) 38%,
+      rgb(255 242 227 / 0.9) 100%
+    ),
+    url("/photos/PUP%20Bataan.webp") center/cover fixed no-repeat,
+    radial-gradient(
+      circle at top right,
+      rgb(255 211 0 / 0.14),
+      transparent 28%
+    ),
+    radial-gradient(
+      circle at bottom left,
+      rgb(138 0 0 / 0.08),
+      transparent 34%
+    ),
+    var(--background);
+  color: var(--foreground);
+  font-family: var(--font-main), sans-serif;
+}
+
+html {
+  color-scheme: light;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+::selection {
+  background: rgb(138 0 0 / 0.2);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
