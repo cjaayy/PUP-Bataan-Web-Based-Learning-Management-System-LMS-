@@ -3,16 +3,29 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createClient as createAdminClient } from "@supabase/supabase-js";
 
 function getText(formData: FormData, key: string) {
   return String(formData.get(key) || "").trim();
 }
 
 function normalizeAuthErrorMessage(message: string) {
+  const normalized = message.toLowerCase();
+
   if (
-    message.includes("For security purposes, you can only request this after")
+    normalized.includes("already registered") ||
+    normalized.includes("user already registered") ||
+    normalized.includes("duplicate")
   ) {
-    return "Please wait a moment and try again.";
+    return "This email is already registered. Please log in or reset your password.";
+  }
+
+  if (
+    normalized.includes("rate limit") ||
+    normalized.includes("too many requests") ||
+    normalized.includes("too many email requests")
+  ) {
+    return "Too many signup attempts. Please wait a few minutes and try again.";
   }
 
   return message;
@@ -29,34 +42,67 @@ export async function registerAction(formData: FormData) {
     redirect("/auth/register?error=Please%20fill%20all%20required%20fields");
   }
 
-  const { data, error } = await supabase.auth.signUp({ email, password });
+  const supabaseUrl =
+    process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (error || !data.user) {
+  if (serviceRoleKey) {
+    const adminSupabase = createAdminClient(supabaseUrl!, serviceRoleKey);
+
+    const { data: adminData, error: adminError } =
+      await adminSupabase.auth.admin.createUser({
+        email,
+        password,
+        user_metadata: {
+          full_name: fullName,
+          role,
+        },
+        email_confirm: true,
+      });
+
+    if (adminError || !adminData.user) {
+      redirect(
+        `/auth/register?error=${encodeURIComponent(
+          normalizeAuthErrorMessage(
+            adminError?.message || "Registration failed",
+          ),
+        )}`,
+      );
+    }
+  } else {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+          role,
+        },
+      },
+    });
+
+    if (error || !data.user) {
+      redirect(
+        `/auth/register?error=${encodeURIComponent(
+          normalizeAuthErrorMessage(error?.message || "Registration failed"),
+        )}`,
+      );
+    }
+  }
+
+  const { data: clientData, error: clientError } =
+    await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+  if (clientError || !clientData.session) {
     redirect(
       `/auth/register?error=${encodeURIComponent(
-        normalizeAuthErrorMessage(error?.message || "Registration failed"),
+        normalizeAuthErrorMessage(clientError?.message || "Login failed"),
       )}`,
     );
   }
-
-  const { error: profileError } = await supabase.from("profiles").upsert({
-    id: data.user.id,
-    full_name: fullName,
-    role,
-  });
-
-  if (profileError) {
-    redirect(
-      `/auth/register?error=${encodeURIComponent(profileError.message)}`,
-    );
-  }
-
-  await supabase.auth.updateUser({
-    data: {
-      full_name: fullName,
-      role,
-    },
-  });
 
   revalidatePath("/dashboard");
   redirect("/dashboard");

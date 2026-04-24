@@ -3,10 +3,12 @@ import Link from "next/link";
 function envState() {
   const hasUrl = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL);
   const hasKey = Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  const hasServiceRoleKey = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
 
   return {
     hasUrl,
     hasKey,
+    hasServiceRoleKey,
     ready: hasUrl && hasKey,
   };
 }
@@ -53,6 +55,18 @@ export default function SetupPage() {
               </p>
             </div>
           </div>
+          <div className="mt-4 grid gap-3 rounded-xl bg-[var(--surface-2)] p-4 sm:grid-cols-3">
+            <div className="rounded-lg bg-white px-3 py-3 shadow-sm">
+              <p className="text-xs text-[var(--ink-soft)]">
+                SUPABASE_SERVICE_ROLE_KEY
+              </p>
+              <p className="mt-1 text-sm font-medium text-[var(--ink)]">
+                {state.hasServiceRoleKey
+                  ? "Found"
+                  : "Optional for direct signup"}
+              </p>
+            </div>
+          </div>
 
           <div className="mt-6 space-y-3 text-sm text-[var(--ink-soft)]">
             <p>
@@ -60,6 +74,10 @@ export default function SetupPage() {
               <span className="font-medium text-[var(--ink)]">.env.local</span>{" "}
               file in the project root and copy the values from Supabase
               dashboard: Project Settings &gt; API.
+            </p>
+            <p>
+              For direct signup without email confirmation, also add the service
+              role key from Supabase Project Settings &gt; API.
             </p>
             <p>Example:</p>
             <pre className="overflow-x-auto rounded-xl border border-[var(--line)] bg-[#faf7f8] px-4 py-3 text-xs text-[var(--ink)]">
