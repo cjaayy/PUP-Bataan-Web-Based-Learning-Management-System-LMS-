@@ -9,6 +9,7 @@ import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { AccountStatusToggle } from "@/components/admin/AccountStatusToggle";
 
 type ProfileRow = {
   id: string;
@@ -117,17 +118,62 @@ export async function toggleUserStatusAction(formData: FormData) {
   }
 
   if (disabled) {
-    await adminClient.auth.admin.updateUserById(userId, {
+    // Activate account: clear both auth ban and disabled flags.
+    const unbanAttempt = await adminClient.auth.admin.updateUserById(userId, {
       ban_duration: "none",
     });
+
+    if (unbanAttempt.error) {
+      const unbanSqlAttempt = await adminClient
+        .from("auth.users")
+        .update({ banned_until: null, disabled: false })
+        .eq("id", userId);
+
+      if (unbanSqlAttempt.error) {
+        const fallbackUnban = await adminClient.auth.admin.updateUserById(
+          userId,
+          {
+            ban_duration: "0s",
+          },
+        );
+
+        if (fallbackUnban.error) {
+          throw new Error(
+            unbanSqlAttempt.error.message || fallbackUnban.error.message,
+          );
+        }
+      }
+    }
   } else {
-    await adminClient.auth.admin.updateUserById(userId, {
+    // Deactivate account with a long ban duration and disabled flag.
+    const banAttempt = await adminClient.auth.admin.updateUserById(userId, {
       ban_duration: "876000h",
     });
+
+    if (banAttempt.error) {
+      const banSqlAttempt = await adminClient
+        .from("auth.users")
+        .update({ disabled: true })
+        .eq("id", userId);
+
+      if (banSqlAttempt.error) {
+        const fallbackBan = await adminClient.auth.admin.updateUserById(
+          userId,
+          {
+            ban_duration: "100y",
+          },
+        );
+
+        if (fallbackBan.error) {
+          throw new Error(
+            banSqlAttempt.error.message || fallbackBan.error.message,
+          );
+        }
+      }
+    }
   }
 
   revalidatePath("/admin");
-  redirect("/admin");
 }
 
 export default async function AdminPage({ searchParams }: Props) {
@@ -140,6 +186,7 @@ export default async function AdminPage({ searchParams }: Props) {
   const profilesQuery = adminClient
     .from("profiles")
     .select("id, full_name, role, created_at", { count: "exact" })
+    .in("role", ["student", "faculty"])
     .order("created_at", { ascending: false })
     .limit(20);
 
@@ -156,15 +203,23 @@ export default async function AdminPage({ searchParams }: Props) {
   const typedProfiles = (profiles || []) as ProfileRow[];
   const profileIds = typedProfiles.map((user) => user.id);
 
-  const { data: authUsers } = profileIds.length
-    ? await adminClient
-        .from("auth.users")
-        .select("id, email, disabled, banned_until")
-        .in("id", profileIds)
-    : { data: [] };
+  const authUsers = profileIds.length
+    ? (
+        await adminClient.auth.admin.listUsers({
+          page: 1,
+          perPage: 1000,
+        })
+      ).data.users
+        .filter((user) => profileIds.includes(user.id))
+        .map((user) => ({
+          id: user.id,
+          email: user.email || "-",
+          banned_until: user.banned_until,
+        }))
+    : [];
 
   const authMap = new Map(
-    ((authUsers || []) as AuthUserRow[]).map((user) => [user.id, user]),
+    (authUsers as AuthUserRow[]).map((user) => [user.id, user]),
   );
 
   const { data: announcements } = await supabase
@@ -260,8 +315,6 @@ export default async function AdminPage({ searchParams }: Props) {
               <option value="all">All roles</option>
               <option value="student">Student</option>
               <option value="faculty">Faculty</option>
-              <option value="admin">Admin</option>
-              <option value="superadmin">Super admin</option>
             </select>
             <Button
               type="submit"
@@ -328,48 +381,12 @@ export default async function AdminPage({ searchParams }: Props) {
                       </td>
                       <td className="border-b border-[var(--line)] px-3 py-3">
                         <div className="flex flex-wrap gap-2">
-                          <form
-                            action={toggleUserStatusAction}
-                            className="inline"
-                          >
-                            <input
-                              type="hidden"
-                              name="user_id"
-                              value={user.id}
-                            />
-                            <input type="hidden" name="disabled" value="true" />
-                            <Button
-                              type="submit"
-                              variant="secondary"
-                              disabled={!disabled || !canManageAccount}
-                              className="border-emerald-700 bg-emerald-700 text-white hover:bg-emerald-800 disabled:border-[var(--line)] disabled:bg-[var(--surface)] disabled:text-[var(--ink-soft)]"
-                            >
-                              Activate
-                            </Button>
-                          </form>
-                          <form
-                            action={toggleUserStatusAction}
-                            className="inline"
-                          >
-                            <input
-                              type="hidden"
-                              name="user_id"
-                              value={user.id}
-                            />
-                            <input
-                              type="hidden"
-                              name="disabled"
-                              value="false"
-                            />
-                            <Button
-                              type="submit"
-                              variant="secondary"
-                              disabled={disabled || !canManageAccount}
-                              className="text-[var(--ink)]"
-                            >
-                              Deactivate
-                            </Button>
-                          </form>
+                          <AccountStatusToggle
+                            userId={user.id}
+                            initialDisabled={disabled}
+                            canManageAccount={canManageAccount}
+                            toggleAction={toggleUserStatusAction}
+                          />
                           <form action={deleteUserAction} className="inline">
                             <input
                               type="hidden"
