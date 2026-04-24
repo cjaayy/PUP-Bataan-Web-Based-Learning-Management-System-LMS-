@@ -39,7 +39,7 @@ export default async function LMSLayout({ children }: Props) {
   return (
     <div className="flex min-h-screen bg-transparent">
       <Sidebar role={profile.role} />
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="ml-[240px] flex min-w-0 flex-1 flex-col">
         <Topbar
           fullName={profile.full_name}
           notifications={formattedNotifications}

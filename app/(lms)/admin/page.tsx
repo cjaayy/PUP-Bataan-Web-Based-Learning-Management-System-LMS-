@@ -1,6 +1,5 @@
 "use server";
 
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireRole, requireUser } from "@/lib/auth";
@@ -32,10 +31,17 @@ type AnnouncementRow = {
 };
 
 type Props = {
-  searchParams?: {
-    query?: string;
-    role?: string;
-  };
+  searchParams?:
+    | {
+        query?: string;
+        role?: string;
+        filter?: string;
+      }
+    | Promise<{
+        query?: string;
+        role?: string;
+        filter?: string;
+      }>;
 };
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -180,37 +186,55 @@ export default async function AdminPage({ searchParams }: Props) {
   const { profile } = await requireRole(["admin", "superadmin"]);
   const supabase = await createClient();
 
-  const query = searchParams?.query?.trim() ?? "";
-  const roleFilter = searchParams?.role;
+  const resolvedSearchParams = await Promise.resolve(searchParams);
+  const query = resolvedSearchParams?.query?.trim() ?? "";
+  const filter = resolvedSearchParams?.filter ?? "all";
+  const showFaculty = filter === "faculty";
+  const showStudents = !showFaculty;
 
-  const profilesQuery = adminClient
+  let studentQuery = adminClient
     .from("profiles")
     .select("id, full_name, role, created_at", { count: "exact" })
-    .in("role", ["student", "faculty"])
+    .eq("role", "student")
     .order("created_at", { ascending: false })
-    .limit(20);
+    .limit(100);
 
-  const filteredProfiles = roleFilter
-    ? profilesQuery.eq("role", roleFilter)
-    : profilesQuery;
+  if (query) {
+    studentQuery = studentQuery.ilike("full_name", `%${query}%`);
+  }
 
-  const finalProfilesQuery = query
-    ? filteredProfiles.ilike("full_name", `%${query}%`)
-    : filteredProfiles;
+  const { data: studentProfiles, count: totalStudents } = await studentQuery;
 
-  const { data: profiles, count: totalUsers } = await finalProfilesQuery;
+  let facultyQuery = adminClient
+    .from("profiles")
+    .select("id, full_name, role, created_at", { count: "exact" })
+    .eq("role", "faculty")
+    .order("created_at", { ascending: false })
+    .limit(100);
 
-  const typedProfiles = (profiles || []) as ProfileRow[];
-  const profileIds = typedProfiles.map((user) => user.id);
+  if (query) {
+    facultyQuery = facultyQuery.ilike("full_name", `%${query}%`);
+  }
 
-  const authUsers = profileIds.length
+  const { data: facultyProfiles, count: totalFaculty } = await facultyQuery;
+
+  const typedStudentProfiles = (studentProfiles || []) as ProfileRow[];
+  const typedFacultyProfiles = (facultyProfiles || []) as ProfileRow[];
+  const totalUsers = (totalStudents ?? 0) + (totalFaculty ?? 0);
+
+  const allProfileIds = [
+    ...typedStudentProfiles.map((u) => u.id),
+    ...typedFacultyProfiles.map((u) => u.id),
+  ];
+
+  const authUsers = allProfileIds.length
     ? (
         await adminClient.auth.admin.listUsers({
           page: 1,
           perPage: 1000,
         })
       ).data.users
-        .filter((user) => profileIds.includes(user.id))
+        .filter((user) => allProfileIds.includes(user.id))
         .map((user) => ({
           id: user.id,
           email: user.email || "-",
@@ -234,193 +258,265 @@ export default async function AdminPage({ searchParams }: Props) {
 
   const typedAnnouncements = (announcements || []) as AnnouncementRow[];
 
-  const studentCount = typedProfiles.filter(
-    (user) => user.role === "student",
+  const studentCount = typedStudentProfiles.length;
+  const facultyCount = typedFacultyProfiles.length;
+  const currentProfiles = showFaculty
+    ? typedFacultyProfiles
+    : typedStudentProfiles;
+  const activeCurrentCount = currentProfiles.filter(
+    (user) => !isUserDeactivated(authMap.get(user.id)),
   ).length;
-  const facultyCount = typedProfiles.filter(
-    (user) => user.role === "faculty",
-  ).length;
-  const adminCount = typedProfiles.filter(
-    (user) => user.role === "admin",
-  ).length;
+  const totalCurrentCount = currentProfiles.length;
 
   return (
     <div className="space-y-5">
-      <section className="rounded-xl border border-[var(--line)] bg-[var(--surface)] px-5 py-5 shadow-sm">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm text-[var(--ink-soft)]">Admin panel</p>
-            <h1 className="text-3xl font-semibold tracking-tight text-[var(--ink)]">
-              Welcome back, {profile.full_name}
-            </h1>
-            <p className="mt-2 text-sm text-[var(--ink-soft)]">
-              Manage student and faculty accounts from this panel.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         <Card className="space-y-2">
-          <p className="text-sm text-[var(--ink-soft)]">Total users</p>
+          <p className="text-sm text-[var(--ink-soft)]">
+            {showFaculty ? "Total faculty active" : "Total students active"}
+          </p>
           <p className="text-3xl font-semibold text-[var(--ink)]">
-            {totalUsers ?? 0}
+            {activeCurrentCount}
           </p>
         </Card>
         <Card className="space-y-2">
-          <p className="text-sm text-[var(--ink-soft)]">Students</p>
-          <p className="text-3xl font-semibold text-[var(--ink)]">
-            {studentCount}
+          <p className="text-sm text-[var(--ink-soft)]">
+            {showFaculty ? "Total Faculty" : "Total Students"}
           </p>
-        </Card>
-        <Card className="space-y-2">
-          <p className="text-sm text-[var(--ink-soft)]">Faculty</p>
           <p className="text-3xl font-semibold text-[var(--ink)]">
-            {facultyCount}
-          </p>
-        </Card>
-        <Card className="space-y-2">
-          <p className="text-sm text-[var(--ink-soft)]">Active enrollments</p>
-          <p className="text-3xl font-semibold text-[var(--ink)]">
-            {totalEnrollments ?? 0}
+            {totalCurrentCount}
           </p>
         </Card>
       </div>
 
-      <Card>
-        <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-          <div>
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+        <form
+          method="get"
+          className="flex flex-col gap-2 sm:flex-row sm:items-center"
+        >
+          <input
+            type="hidden"
+            name="filter"
+            value={showFaculty ? "faculty" : "student"}
+          />
+          <Input
+            name="query"
+            defaultValue={query}
+            placeholder="Search by name"
+            className="max-w-sm"
+          />
+          <Button
+            type="submit"
+            variant="secondary"
+            className="whitespace-nowrap"
+          >
+            Search
+          </Button>
+        </form>
+      </div>
+
+      {showStudents && (
+        <Card>
+          <div className="mb-4">
             <h2 className="text-lg font-semibold text-[var(--ink)]">
-              Account management
+              Students
             </h2>
             <p className="text-sm text-[var(--ink-soft)]">
-              Search, deactivate, or delete student and faculty accounts.
+              Manage student accounts.
             </p>
           </div>
-          <form
-            className="flex flex-col gap-2 sm:flex-row sm:items-center"
-            method="get"
-          >
-            <Input
-              name="query"
-              defaultValue={query}
-              placeholder="Search by name"
-              className="max-w-sm"
-            />
-            <select
-              name="role"
-              defaultValue={roleFilter ?? "all"}
-              className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--pup-maroon)]"
-            >
-              <option value="all">All roles</option>
-              <option value="student">Student</option>
-              <option value="faculty">Faculty</option>
-            </select>
-            <Button
-              type="submit"
-              variant="secondary"
-              className="whitespace-nowrap"
-            >
-              Search
-            </Button>
-          </form>
-        </div>
 
-        <div className="overflow-x-auto" suppressHydrationWarning>
-          <table className="w-full border-collapse text-left text-sm">
-            <thead>
-              <tr>
-                <th className="border-b border-[var(--line)] px-3 py-3 text-[var(--ink-soft)]">
-                  Name
-                </th>
-                <th className="border-b border-[var(--line)] px-3 py-3 text-[var(--ink-soft)]">
-                  Role
-                </th>
-                <th className="border-b border-[var(--line)] px-3 py-3 text-[var(--ink-soft)]">
-                  Email
-                </th>
-                <th className="border-b border-[var(--line)] px-3 py-3 text-[var(--ink-soft)]">
-                  Status
-                </th>
-                <th className="border-b border-[var(--line)] px-3 py-3 text-[var(--ink-soft)]">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {typedProfiles.length > 0 ? (
-                typedProfiles.map((user) => {
-                  const authUser = authMap.get(user.id);
-                  const disabled = isUserDeactivated(authUser);
-                  const isSuperAdminAccount = user.role === "superadmin";
-                  const canManageAccount =
-                    !isSuperAdminAccount &&
-                    (user.role !== "admin" || profile.role === "superadmin");
-
-                  return (
-                    <tr key={user.id}>
-                      <td className="border-b border-[var(--line)] px-3 py-3 text-[var(--ink)]">
-                        {user.full_name}
-                      </td>
-                      <td className="border-b border-[var(--line)] px-3 py-3 text-[var(--ink-soft)]">
-                        {user.role}
-                      </td>
-                      <td className="border-b border-[var(--line)] px-3 py-3 text-[var(--ink-soft)]">
-                        {authUser?.email ?? "-"}
-                      </td>
-                      <td className="border-b border-[var(--line)] px-3 py-3">
-                        <span
-                          className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
-                            disabled
-                              ? "bg-[var(--surface-2)] text-[var(--pup-maroon)]"
-                              : "bg-[var(--surface-2)] text-[var(--ink)]"
-                          }`}
-                        >
-                          {disabled ? "Deactivated" : "Active"}
-                        </span>
-                      </td>
-                      <td className="border-b border-[var(--line)] px-3 py-3">
-                        <div className="flex flex-wrap gap-2">
-                          <AccountStatusToggle
-                            userId={user.id}
-                            initialDisabled={disabled}
-                            canManageAccount={canManageAccount}
-                            toggleAction={toggleUserStatusAction}
-                          />
-                          <form action={deleteUserAction} className="inline">
-                            <input
-                              type="hidden"
-                              name="user_id"
-                              value={user.id}
-                            />
-                            <Button
-                              type="submit"
-                              variant="ghost"
-                              disabled={!canManageAccount}
-                              className="text-[var(--pup-maroon)] hover:bg-[var(--surface-2)]"
-                            >
-                              Delete
-                            </Button>
-                          </form>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
+          <div className="overflow-x-auto" suppressHydrationWarning>
+            <table className="w-full border-collapse text-left text-sm">
+              <thead>
                 <tr>
-                  <td
-                    colSpan={5}
-                    className="px-3 py-4 text-sm text-[var(--ink-soft)]"
-                  >
-                    No users found for this search.
-                  </td>
+                  <th className="border-b border-[var(--line)] px-3 py-3 text-[var(--ink-soft)]">
+                    Name
+                  </th>
+                  <th className="border-b border-[var(--line)] px-3 py-3 text-[var(--ink-soft)]">
+                    Email
+                  </th>
+                  <th className="border-b border-[var(--line)] px-3 py-3 text-[var(--ink-soft)]">
+                    Status
+                  </th>
+                  <th className="border-b border-[var(--line)] px-3 py-3 text-[var(--ink-soft)]">
+                    Actions
+                  </th>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+              </thead>
+              <tbody>
+                {typedStudentProfiles.length > 0 ? (
+                  typedStudentProfiles.map((user) => {
+                    const authUser = authMap.get(user.id);
+                    const disabled = isUserDeactivated(authUser);
+                    const isSuperAdminAccount = user.role === "superadmin";
+                    const canManageAccount =
+                      !isSuperAdminAccount &&
+                      (user.role !== "admin" || profile.role === "superadmin");
+
+                    return (
+                      <tr key={user.id}>
+                        <td className="border-b border-[var(--line)] px-3 py-3 text-[var(--ink)]">
+                          {user.full_name}
+                        </td>
+                        <td className="border-b border-[var(--line)] px-3 py-3 text-[var(--ink-soft)]">
+                          {authUser?.email ?? "-"}
+                        </td>
+                        <td className="border-b border-[var(--line)] px-3 py-3">
+                          <span
+                            className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
+                              disabled
+                                ? "bg-[var(--surface-2)] text-[var(--pup-maroon)]"
+                                : "bg-[var(--surface-2)] text-[var(--ink)]"
+                            }`}
+                          >
+                            {disabled ? "Deactivated" : "Active"}
+                          </span>
+                        </td>
+                        <td className="border-b border-[var(--line)] px-3 py-3">
+                          <div className="flex flex-wrap gap-2">
+                            <AccountStatusToggle
+                              userId={user.id}
+                              initialDisabled={disabled}
+                              canManageAccount={canManageAccount}
+                              toggleAction={toggleUserStatusAction}
+                            />
+                            <form action={deleteUserAction} className="inline">
+                              <input
+                                type="hidden"
+                                name="user_id"
+                                value={user.id}
+                              />
+                              <Button
+                                type="submit"
+                                variant="ghost"
+                                disabled={!canManageAccount}
+                                className="text-[var(--pup-maroon)] hover:bg-[var(--surface-2)]"
+                              >
+                                Delete
+                              </Button>
+                            </form>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td
+                      colSpan={4}
+                      className="px-3 py-4 text-sm text-[var(--ink-soft)]"
+                    >
+                      No students found for this search.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {showFaculty && (
+        <Card>
+          <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-[var(--ink)]">
+                Faculty
+              </h2>
+              <p className="text-sm text-[var(--ink-soft)]">
+                Manage faculty accounts.
+              </p>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto" suppressHydrationWarning>
+            <table className="w-full border-collapse text-left text-sm">
+              <thead>
+                <tr>
+                  <th className="border-b border-[var(--line)] px-3 py-3 text-[var(--ink-soft)]">
+                    Name
+                  </th>
+                  <th className="border-b border-[var(--line)] px-3 py-3 text-[var(--ink-soft)]">
+                    Email
+                  </th>
+                  <th className="border-b border-[var(--line)] px-3 py-3 text-[var(--ink-soft)]">
+                    Status
+                  </th>
+                  <th className="border-b border-[var(--line)] px-3 py-3 text-[var(--ink-soft)]">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {typedFacultyProfiles.length > 0 ? (
+                  typedFacultyProfiles.map((user) => {
+                    const authUser = authMap.get(user.id);
+                    const disabled = isUserDeactivated(authUser);
+                    const canManageAccount = true;
+
+                    return (
+                      <tr key={user.id}>
+                        <td className="border-b border-[var(--line)] px-3 py-3 text-[var(--ink)]">
+                          {user.full_name}
+                        </td>
+                        <td className="border-b border-[var(--line)] px-3 py-3 text-[var(--ink-soft)]">
+                          {authUser?.email ?? "-"}
+                        </td>
+                        <td className="border-b border-[var(--line)] px-3 py-3">
+                          <span
+                            className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
+                              disabled
+                                ? "bg-[var(--surface-2)] text-[var(--pup-maroon)]"
+                                : "bg-[var(--surface-2)] text-[var(--ink)]"
+                            }`}
+                          >
+                            {disabled ? "Deactivated" : "Active"}
+                          </span>
+                        </td>
+                        <td className="border-b border-[var(--line)] px-3 py-3">
+                          <div className="flex flex-wrap gap-2">
+                            <AccountStatusToggle
+                              userId={user.id}
+                              initialDisabled={disabled}
+                              canManageAccount={canManageAccount}
+                              toggleAction={toggleUserStatusAction}
+                            />
+                            <form action={deleteUserAction} className="inline">
+                              <input
+                                type="hidden"
+                                name="user_id"
+                                value={user.id}
+                              />
+                              <Button
+                                type="submit"
+                                variant="ghost"
+                                disabled={!canManageAccount}
+                                className="text-[var(--pup-maroon)] hover:bg-[var(--surface-2)]"
+                              >
+                                Delete
+                              </Button>
+                            </form>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td
+                      colSpan={4}
+                      className="px-3 py-4 text-sm text-[var(--ink-soft)]"
+                    >
+                      No faculty found for this search.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
     </div>
   );
 }
