@@ -57,12 +57,22 @@ Open `http://localhost:3000`.
 ## Deploy to Vercel
 
 1. Push this repository to GitHub.
-2. Import the project in Vercel.
-3. Add the same environment variables in Vercel project settings.
-4. Deploy.
+2. Go to [vercel.com](https://vercel.com) and click **New Project**.
+3. Import your GitHub repository. Vercel auto-detects Next.js.
+4. Under **Environment Variables**, add:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+5. Click **Deploy**. Vercel will build and publish the app.
+6. Visit the generated URL. Subsequent pushes to the main branch redeploy automatically.
+
+> **Note:** if you forget to set the environment variables, the app will redirect every request to the `/setup` page with instructions.
 
 ## Notes
 
 - Storage bucket expected by app: `course-files`
 - All core data access is enforced with Supabase Row Level Security policies from schema
-- Next.js request routing uses `proxy.ts` instead of the deprecated `middleware.ts` convention
+- Next.js request routing is handled by `proxy.ts` at the project root (Next.js 16 convention)
