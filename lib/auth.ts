@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-export type UserRole = "student" | "faculty" | "admin";
+export type UserRole = "student" | "faculty" | "admin" | "superadmin";
 
 function getFallbackProfileName(user: {
   email?: string;
@@ -18,7 +18,12 @@ function getFallbackProfileName(user: {
 function getFallbackProfileRole(user: { user_metadata?: { role?: string } }) {
   const role = user.user_metadata?.role;
 
-  if (role === "student" || role === "faculty" || role === "admin") {
+  if (
+    role === "student" ||
+    role === "faculty" ||
+    role === "admin" ||
+    role === "superadmin"
+  ) {
     return role;
   }
 

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 function envState() {
   const hasUrl = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL);
@@ -15,6 +16,10 @@ function envState() {
 
 export default function SetupPage() {
   const state = envState();
+
+  if (state.ready) {
+    redirect("/");
+  }
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_20%_10%,#fff_0,#f4f2f3_45%,#eee8eb_100%)] px-4 py-10">
@@ -106,10 +111,10 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key`}
             </Link>
             {state.hasServiceRoleKey ? (
               <Link
-                href="/setup/admin"
-                className="rounded-lg border border-[var(--line)] bg-white px-5 py-2.5 text-sm font-medium text-[var(--ink)] transition-all duration-200 hover:bg-[var(--surface-2)]"
+                href="/setup/superadmin"
+                className="rounded-lg bg-[var(--ink)] px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:bg-[var(--pup-maroon)]"
               >
-                Create admin account
+                Create super admin account
               </Link>
             ) : null}
           </div>

@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
+import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -14,6 +14,17 @@ if (!serviceRoleKey || !supabaseUrl) {
 }
 
 const adminClient = createAdminClient(supabaseUrl, serviceRoleKey);
+
+async function requireSuperAdminAfterBootstrap() {
+  const { count } = await adminClient
+    .from("profiles")
+    .select("id", { count: "exact", head: true })
+    .eq("role", "superadmin");
+
+  if ((count ?? 0) > 0) {
+    await requireRole(["superadmin"]);
+  }
+}
 
 function normalizeAuthErrorMessage(message: string) {
   const normalized = message.toLowerCase();
@@ -37,23 +48,25 @@ function normalizeAuthErrorMessage(message: string) {
   return message;
 }
 
-export async function createAdminAction(formData: FormData) {
+export async function createSuperAdminAction(formData: FormData) {
   "use server";
 
-  await requireRole(["superadmin"]);
+  await requireSuperAdminAfterBootstrap();
 
   const email = formData.get("email")?.toString().trim();
   const password = formData.get("password")?.toString();
 
   if (!email || !password) {
-    throw new Error("Email and password are required to create an admin user.");
+    throw new Error(
+      "Email and password are required to create a super admin user.",
+    );
   }
 
-  const { data, error } = await adminClient.auth.admin.createUser({
+  const { error } = await adminClient.auth.admin.createUser({
     email,
     password,
     user_metadata: {
-      role: "admin",
+      role: "superadmin",
     },
     email_confirm: true,
   });
@@ -63,29 +76,28 @@ export async function createAdminAction(formData: FormData) {
   }
 
   redirect(
-    "/auth/login?message=Admin account created successfully. Please log in.",
+    "/auth/login?message=Super%20admin%20account%20created%20successfully.%20Please%20log%20in.",
   );
 }
 
-export default async function CreateAdminPage() {
-  await requireRole(["superadmin"]);
+export default async function CreateSuperAdminPage() {
+  await requireSuperAdminAfterBootstrap();
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_20%_10%,#fff_0,#f4f2f3_45%,#eee8eb_100%)] px-4 py-10">
       <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-3xl items-center">
         <section className="w-full rounded-2xl border border-[var(--line)] bg-white p-6 shadow-sm sm:p-8">
           <p className="text-xs uppercase tracking-[0.16em] text-[var(--pup-maroon)]">
-            Super admin only
+            Bootstrap setup
           </p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight text-[var(--ink)]">
-            Create an administrator account
+            Create a super admin account
           </h1>
           <p className="mt-3 max-w-2xl text-sm text-[var(--ink-soft)]">
-            Use the service role key to create a protected admin user. Only a
-            super admin can access this page.
+            This account can create admin accounts and manage admin access.
           </p>
 
-          <form action={createAdminAction} className="mt-8 space-y-5">
+          <form action={createSuperAdminAction} className="mt-8 space-y-5">
             <div>
               <label
                 className="text-sm font-medium text-[var(--ink)]"
@@ -98,7 +110,7 @@ export default async function CreateAdminPage() {
                 name="email"
                 type="email"
                 required
-                placeholder="admin@example.com"
+                placeholder="superadmin@example.com"
               />
             </div>
 
@@ -119,7 +131,7 @@ export default async function CreateAdminPage() {
             </div>
 
             <div className="flex flex-wrap gap-3">
-              <Button type="submit">Create admin</Button>
+              <Button type="submit">Create super admin</Button>
               <Link
                 href="/setup"
                 className="inline-flex items-center rounded-lg border border-[var(--line)] bg-white px-4 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--surface-2)]"
@@ -129,11 +141,25 @@ export default async function CreateAdminPage() {
             </div>
           </form>
 
+          <div className="mt-5 rounded-xl border border-[var(--line)] bg-[var(--surface-2)] p-4">
+            <p className="text-sm font-medium text-[var(--ink)]">
+              Need to manage your own super admin settings?
+            </p>
+            <p className="mt-1 text-sm text-[var(--ink-soft)]">
+              Update your display name and password from your settings page.
+            </p>
+            <Link
+              href="/settings/superadmin"
+              className="mt-3 inline-flex rounded-lg bg-[var(--pup-maroon)] px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-[var(--pup-maroon-deep)]"
+            >
+              Open super admin settings
+            </Link>
+          </div>
+
           <Card tone="soft" className="mt-6">
             <p className="text-sm text-[var(--ink-soft)]">
-              The admin account will be created with the role{" "}
-              <span className="font-medium text-[var(--ink)]">admin</span> and
-              can access the admin dashboard once signed in.
+              The super admin account will be created with the role{" "}
+              <span className="font-medium text-[var(--ink)]">superadmin</span>.
             </p>
           </Card>
         </section>

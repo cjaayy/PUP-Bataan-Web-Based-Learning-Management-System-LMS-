@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import Link from "next/link";
 
 export default async function AdminDashboardPage() {
-  await requireRole(["admin"]);
+  const { profile } = await requireRole(["admin", "superadmin"]);
   const supabase = await createClient();
 
   const [
@@ -25,7 +25,8 @@ export default async function AdminDashboardPage() {
           <div>
             <p className="text-sm text-[var(--ink-soft)]">Admin dashboard</p>
             <h1 className="text-3xl font-semibold tracking-tight text-[var(--ink)]">
-              Welcome back, administrator
+              Welcome back,{" "}
+              {profile.role === "superadmin" ? "super admin" : "administrator"}
             </h1>
             <p className="mt-2 text-sm text-[var(--ink-soft)]">
               Manage users, courses, and announcements across the LMS.
@@ -37,6 +38,14 @@ export default async function AdminDashboardPage() {
           >
             Admin panel
           </Link>
+          {profile.role === "superadmin" ? (
+            <Link
+              href="/setup/admin"
+              className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--surface-2)]"
+            >
+              Create admin account
+            </Link>
+          ) : null}
         </div>
       </section>
 

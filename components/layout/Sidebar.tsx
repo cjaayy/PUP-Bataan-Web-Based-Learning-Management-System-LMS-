@@ -26,6 +26,11 @@ export function Sidebar({ role }: SidebarProps) {
       { href: "/courses/create", label: "Create Class" },
       { href: "/calendar", label: "Calendar" },
     ],
+    superadmin: [
+      { href: "/dashboard", label: "Dashboard" },
+      { href: "/settings/superadmin", label: "Settings" },
+      { href: "/admin", label: "Admin Panel" },
+    ],
   } as const;
 
   const items =
@@ -33,7 +38,9 @@ export function Sidebar({ role }: SidebarProps) {
       ? itemSets.student
       : role === "faculty"
         ? itemSets.faculty
-        : [{ href: "/dashboard", label: "Dashboard" }];
+        : role === "superadmin"
+          ? itemSets.superadmin
+          : [{ href: "/dashboard", label: "Dashboard" }];
 
   return (
     <aside className="w-[240px] shrink-0 border-r border-[var(--line)] bg-[var(--surface)] px-4 py-6">

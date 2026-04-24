@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { requireRole } from "@/lib/auth";
+import { requireRole, requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { Card } from "@/components/ui/Card";
@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/Input";
 type ProfileRow = {
   id: string;
   full_name: string;
-  role: "student" | "faculty" | "admin";
+  role: "student" | "faculty" | "admin" | "superadmin";
   created_at: string;
 };
 
@@ -21,6 +21,7 @@ type AuthUserRow = {
   id: string;
   email: string;
   disabled?: boolean;
+  banned_until?: string | null;
 };
 
 type AnnouncementRow = {
@@ -49,10 +50,46 @@ function getText(formData: FormData, key: string) {
   return String(formData.get(key) || "").trim();
 }
 
+function isUserDeactivated(user: AuthUserRow | undefined) {
+  if (!user) {
+    return false;
+  }
+
+  if (user.disabled) {
+    return true;
+  }
+
+  if (!user.banned_until) {
+    return false;
+  }
+
+  return new Date(user.banned_until).getTime() > Date.now();
+}
+
+async function getAccountRole(userId: string) {
+  const { data } = await adminClient
+    .from("profiles")
+    .select("role")
+    .eq("id", userId)
+    .maybeSingle<{ role: string }>();
+
+  return data?.role ?? null;
+}
+
 export async function deleteUserAction(formData: FormData) {
+  const { profile: actorProfile } = await requireUser();
   const userId = getText(formData, "user_id");
 
   if (!userId) {
+    redirect("/admin");
+  }
+
+  const targetRole = await getAccountRole(userId);
+
+  if (
+    targetRole === "superadmin" ||
+    (targetRole === "admin" && actorProfile.role !== "superadmin")
+  ) {
     redirect("/admin");
   }
 
@@ -62,10 +99,20 @@ export async function deleteUserAction(formData: FormData) {
 }
 
 export async function toggleUserStatusAction(formData: FormData) {
+  const { profile: actorProfile } = await requireUser();
   const userId = getText(formData, "user_id");
   const disabled = getText(formData, "disabled") === "true";
 
   if (!userId) {
+    redirect("/admin");
+  }
+
+  const targetRole = await getAccountRole(userId);
+
+  if (
+    targetRole === "superadmin" ||
+    (targetRole === "admin" && actorProfile.role !== "superadmin")
+  ) {
     redirect("/admin");
   }
 
@@ -84,7 +131,7 @@ export async function toggleUserStatusAction(formData: FormData) {
 }
 
 export default async function AdminPage({ searchParams }: Props) {
-  const { profile } = await requireRole(["admin"]);
+  const { profile } = await requireRole(["admin", "superadmin"]);
   const supabase = await createClient();
 
   const query = searchParams?.query?.trim() ?? "";
@@ -112,7 +159,7 @@ export default async function AdminPage({ searchParams }: Props) {
   const { data: authUsers } = profileIds.length
     ? await adminClient
         .from("auth.users")
-        .select("id, email, disabled")
+        .select("id, email, disabled, banned_until")
         .in("id", profileIds)
     : { data: [] };
 
@@ -214,6 +261,7 @@ export default async function AdminPage({ searchParams }: Props) {
               <option value="student">Student</option>
               <option value="faculty">Faculty</option>
               <option value="admin">Admin</option>
+              <option value="superadmin">Super admin</option>
             </select>
             <Button
               type="submit"
@@ -250,7 +298,11 @@ export default async function AdminPage({ searchParams }: Props) {
               {typedProfiles.length > 0 ? (
                 typedProfiles.map((user) => {
                   const authUser = authMap.get(user.id);
-                  const disabled = Boolean(authUser?.disabled);
+                  const disabled = isUserDeactivated(authUser);
+                  const isSuperAdminAccount = user.role === "superadmin";
+                  const canManageAccount =
+                    !isSuperAdminAccount &&
+                    (user.role !== "admin" || profile.role === "superadmin");
 
                   return (
                     <tr key={user.id}>
@@ -274,35 +326,66 @@ export default async function AdminPage({ searchParams }: Props) {
                           {disabled ? "Deactivated" : "Active"}
                         </span>
                       </td>
-                      <td className="border-b border-[var(--line)] px-3 py-3 space-x-2">
-                        <form
-                          action={toggleUserStatusAction}
-                          className="inline"
-                        >
-                          <input type="hidden" name="user_id" value={user.id} />
-                          <input
-                            type="hidden"
-                            name="disabled"
-                            value={String(disabled)}
-                          />
-                          <Button
-                            type="submit"
-                            variant="secondary"
-                            className="text-[var(--ink)]"
+                      <td className="border-b border-[var(--line)] px-3 py-3">
+                        <div className="flex flex-wrap gap-2">
+                          <form
+                            action={toggleUserStatusAction}
+                            className="inline"
                           >
-                            {disabled ? "Activate" : "Deactivate"}
-                          </Button>
-                        </form>
-                        <form action={deleteUserAction} className="inline">
-                          <input type="hidden" name="user_id" value={user.id} />
-                          <Button
-                            type="submit"
-                            variant="ghost"
-                            className="text-[var(--pup-maroon)] hover:bg-[var(--surface-2)]"
+                            <input
+                              type="hidden"
+                              name="user_id"
+                              value={user.id}
+                            />
+                            <input type="hidden" name="disabled" value="true" />
+                            <Button
+                              type="submit"
+                              variant="secondary"
+                              disabled={!disabled || !canManageAccount}
+                              className="border-emerald-700 bg-emerald-700 text-white hover:bg-emerald-800 disabled:border-[var(--line)] disabled:bg-[var(--surface)] disabled:text-[var(--ink-soft)]"
+                            >
+                              Activate
+                            </Button>
+                          </form>
+                          <form
+                            action={toggleUserStatusAction}
+                            className="inline"
                           >
-                            Delete
-                          </Button>
-                        </form>
+                            <input
+                              type="hidden"
+                              name="user_id"
+                              value={user.id}
+                            />
+                            <input
+                              type="hidden"
+                              name="disabled"
+                              value="false"
+                            />
+                            <Button
+                              type="submit"
+                              variant="secondary"
+                              disabled={disabled || !canManageAccount}
+                              className="text-[var(--ink)]"
+                            >
+                              Deactivate
+                            </Button>
+                          </form>
+                          <form action={deleteUserAction} className="inline">
+                            <input
+                              type="hidden"
+                              name="user_id"
+                              value={user.id}
+                            />
+                            <Button
+                              type="submit"
+                              variant="ghost"
+                              disabled={!canManageAccount}
+                              className="text-[var(--pup-maroon)] hover:bg-[var(--surface-2)]"
+                            >
+                              Delete
+                            </Button>
+                          </form>
+                        </div>
                       </td>
                     </tr>
                   );

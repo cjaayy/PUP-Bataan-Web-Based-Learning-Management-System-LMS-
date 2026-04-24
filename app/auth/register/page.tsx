@@ -1,4 +1,5 @@
 import { registerAction } from "@/app/auth/actions";
+import Link from "next/link";
 import { AuthCard } from "@/components/auth/AuthCard";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -9,6 +10,7 @@ type Props = {
 
 export default async function RegisterPage({ searchParams }: Props) {
   const params = await searchParams;
+  const canCreateSuperAdmin = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
 
   return (
     <main className="min-h-screen bg-transparent px-4 py-10">
@@ -86,11 +88,10 @@ export default async function RegisterPage({ searchParams }: Props) {
               >
                 <option value="student">Student</option>
                 <option value="faculty">Faculty</option>
-                <option value="admin">Admin</option>
               </select>
               <p className="mt-2 text-xs text-[var(--ink-soft)]">
-                Select Admin to create a system administrator account. Admin
-                signup requires SUPABASE_SERVICE_ROLE_KEY.
+                Admin and super admin accounts are created from the protected
+                setup flow.
               </p>
             </div>
 
@@ -98,6 +99,15 @@ export default async function RegisterPage({ searchParams }: Props) {
               Register
             </Button>
           </form>
+
+          {canCreateSuperAdmin ? (
+            <Link
+              href="/setup/superadmin"
+              className="mt-3 inline-flex items-center rounded-lg border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-sm font-medium text-[var(--ink)] transition-all duration-200 hover:bg-[var(--surface-2)]"
+            >
+              Create super admin account
+            </Link>
+          ) : null}
         </AuthCard>
       </div>
     </main>

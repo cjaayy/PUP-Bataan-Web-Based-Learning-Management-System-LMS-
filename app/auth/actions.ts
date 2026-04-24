@@ -9,6 +9,42 @@ function getText(formData: FormData, key: string) {
   return String(formData.get(key) || "").trim();
 }
 
+async function getAdminRoleForEmail(email: string) {
+  const supabaseUrl =
+    process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    return null;
+  }
+
+  const adminSupabase = createAdminClient(supabaseUrl, serviceRoleKey);
+  const { data } = await adminSupabase.auth.admin.listUsers({
+    page: 1,
+    perPage: 1000,
+  });
+
+  const matchedUser = data.users.find(
+    (user) => user.email?.toLowerCase() === email.toLowerCase(),
+  );
+
+  if (!matchedUser?.id) {
+    return null;
+  }
+
+  const { data: profile } = await adminSupabase
+    .from("profiles")
+    .select("role")
+    .eq("id", matchedUser.id)
+    .maybeSingle<{ role: string }>();
+
+  return {
+    id: matchedUser.id,
+    role: profile?.role ?? null,
+    adminSupabase,
+  };
+}
+
 function normalizeAuthErrorMessage(message: string) {
   const normalized = message.toLowerCase();
 
@@ -28,6 +64,14 @@ function normalizeAuthErrorMessage(message: string) {
     return "Too many signup attempts. Please wait a few minutes and try again.";
   }
 
+  if (
+    normalized.includes("user is banned") ||
+    normalized.includes("banned") ||
+    normalized.includes("not allowed")
+  ) {
+    return "Your account is deactivated. Please contact an administrator to reactivate it.";
+  }
+
   return message;
 }
 
@@ -42,17 +86,17 @@ export async function registerAction(formData: FormData) {
     redirect("/auth/register?error=Please%20fill%20all%20required%20fields");
   }
 
-  const supabaseUrl =
-    process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (role === "admin" && !serviceRoleKey) {
+  if (role !== "student" && role !== "faculty") {
     redirect(
       `/auth/register?error=${encodeURIComponent(
-        "Admin registration requires SUPABASE_SERVICE_ROLE_KEY. Add it to .env.local or use the setup admin page.",
+        "Only student and faculty accounts can be created from this page.",
       )}`,
     );
   }
+
+  const supabaseUrl =
+    process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (serviceRoleKey) {
     const adminSupabase = createAdminClient(supabaseUrl!, serviceRoleKey);
@@ -124,7 +168,46 @@ export async function loginAction(formData: FormData) {
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
-    redirect(`/auth/login?error=${encodeURIComponent(error.message)}`);
+    if (
+      error.message.toLowerCase().includes("banned") ||
+      error.message.toLowerCase().includes("not allowed")
+    ) {
+      const adminAccount = await getAdminRoleForEmail(email);
+
+      if (
+        adminAccount?.role === "admin" ||
+        adminAccount?.role === "superadmin"
+      ) {
+        await adminAccount.adminSupabase.auth.admin.updateUserById(
+          adminAccount.id,
+          {
+            ban_duration: "none",
+          },
+        );
+
+        const retry = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (!retry.error && retry.data.session) {
+          revalidatePath("/dashboard");
+          redirect("/dashboard");
+        }
+      }
+
+      redirect(
+        `/auth/login?error=${encodeURIComponent(
+          normalizeAuthErrorMessage(error.message),
+        )}`,
+      );
+    }
+
+    redirect(
+      `/auth/login?error=${encodeURIComponent(
+        normalizeAuthErrorMessage(error.message),
+      )}`,
+    );
   }
 
   revalidatePath("/dashboard");
