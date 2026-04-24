@@ -70,9 +70,13 @@ export async function toggleUserStatusAction(formData: FormData) {
   }
 
   if (disabled) {
-    await adminClient.auth.admin.enableUser(userId);
+    await adminClient.auth.admin.updateUserById(userId, {
+      ban_duration: "none",
+    });
   } else {
-    await adminClient.auth.admin.disableUser(userId);
+    await adminClient.auth.admin.updateUserById(userId, {
+      ban_duration: "876000h",
+    });
   }
 
   revalidatePath("/admin");

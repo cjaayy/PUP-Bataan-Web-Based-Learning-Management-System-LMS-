@@ -1,8 +1,5 @@
-"use server";
-
 import { redirect } from "next/navigation";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
-import { normalizeAuthErrorMessage } from "@/app/auth/actions";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
@@ -17,7 +14,31 @@ if (!serviceRoleKey || !supabaseUrl) {
 
 const adminClient = createAdminClient(supabaseUrl, serviceRoleKey);
 
+function normalizeAuthErrorMessage(message: string) {
+  const normalized = message.toLowerCase();
+
+  if (
+    normalized.includes("already registered") ||
+    normalized.includes("user already registered") ||
+    normalized.includes("duplicate")
+  ) {
+    return "This email is already registered. Please log in or reset your password.";
+  }
+
+  if (
+    normalized.includes("rate limit") ||
+    normalized.includes("too many requests") ||
+    normalized.includes("too many email requests")
+  ) {
+    return "Too many signup attempts. Please wait a few minutes and try again.";
+  }
+
+  return message;
+}
+
 export async function createAdminAction(formData: FormData) {
+  "use server";
+
   const email = formData.get("email")?.toString().trim();
   const password = formData.get("password")?.toString();
 
