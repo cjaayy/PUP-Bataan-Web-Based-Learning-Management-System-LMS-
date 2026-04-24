@@ -50,8 +50,8 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PUP Bataan LMS",
-  description: "Web-based learning management system for PUP Bataan",
+  title: "PUP-BT-ILMS — Ugnay",
+  description: "PUP Bataan Integrated Learning Management System.",
   icons: {
     icon: "/icon.png",
     shortcut: "/icon.png",
